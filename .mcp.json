@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "readback": {
+      "type": "stdio",
+      "command": ".venv/bin/python",
+      "args": ["-m", "readback.mcp_server"],
+      "env": {
+        "READBACK_TTS_PROVIDER": "fake",
+        "READBACK_STT_PROVIDER": "fake"
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+# Synthetic retail / drugstore texts as they would be read aloud by a voice
+# assistant or an accessible product page. All brands and products are fictional.
+# Dense in numbers, units, prices, ingredient names and safety notes - exactly
+# the material where a wrongly spoken word matters.
+lang: de
+category: retail
+items:
+  - id: produkt-01
+    text: >-
+      Lindenhain Pflegedusche Mandelmilch, 250 ml, 1,45 € (1 l = 5,80 €).
+      Mit pH-hautneutraler Formel, vegan und ohne Mikroplastik.
+  - id: produkt-02
+    text: >-
+      AquaPur Sonnenspray LSF 50+ für Kinder, 200 ml. Vor dem Sonnenbad großzügig
+      auftragen und nach dem Baden erneut anwenden. Nicht in die Augen bringen.
+  - id: produkt-03
+    text: >-
+      Kleeblatt Baby Pflegetücher sensitiv, 4 × 52 Stück. Zu 99 % aus Wasser,
+      parfümfrei und dermatologisch bestätigt.
+  - id: inhalt-01
+    text: >-
+      Inhaltsstoffe: Aqua, Glycerin, Sodium Laureth Sulfate, Cocamidopropyl Betaine,
+      Panthenol, Tocopheryl Acetate, Parfum, Citric Acid.
+  - id: dosierung-01
+    text: >-
+      Erwachsene und Kinder ab 12 Jahren nehmen 1 Kapsel täglich mit ausreichend
+      Flüssigkeit ein. Die angegebene empfohlene tägliche Verzehrmenge darf nicht
+      überschritten werden.
+  - id: dosierung-02
+    text: >-
+      Für 1 Liter Wasser 2 Messlöffel (ca. 10 g) Pulver einrühren und mindestens
+      5 Minuten quellen lassen.
+  - id: warnung-01
+    text: >-
+      Achtung: Enthält Natriumhydroxid. Verursacht schwere Augenschäden.
+      Darf nicht in die Hände von Kindern gelangen. Bei Kontakt mit den Augen
+      einige Minuten lang behutsam mit Wasser spülen.
+  - id: allergen-01
+    text: >-
+      Kann Spuren von Haselnüssen, Mandeln und Sesam enthalten. Glutenfrei,
+      laktosefrei und ohne Zuckerzusatz.
+  - id: service-01
+    text: >-
+      Ihre Bestellung Nr. 4711-0815 ist ab Donnerstag, dem 22. Oktober, ab 14:00 Uhr
+      in Ihrer Filiale abholbereit.
+  - id: service-02
+    text: >-
+      Mit dem Coupon sparen Sie 20 % auf Ihren nächsten Einkauf ab 15 € Mindestbestellwert,
+      gültig bis 31.12. dieses Jahres.
+  - id: assistent-01
+    text: >-
+      Gerne! Für empfindliche Haut empfehle ich eine parfümfreie Creme mit Ceramiden
+      und Urea, z. B. mit 5 % Urea für den Körper und 2 % für das Gesicht.
+  - id: assistent-02
+    text: >-
+      Der Unterschied: Ein Eau de Toilette enthält etwa 5 bis 10 % Duftöle,
+      ein Eau de Parfum dagegen 10 bis 20 % und hält deshalb länger.

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://langgra.ph/schema.json",
+  "dependencies": ["."],
+  "graphs": {
+    "readback": "./src/readback/graph/pipeline.py:graph"
+  },
+  "env": ".env"
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/pytest:*)",
+      "Bash(.venv/bin/ruff:*)",
+      "Bash(.venv/bin/mypy:*)",
+      "Bash(.venv/bin/readback eval:*)",
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(make eval)",
+      "mcp__readback__compare_texts",
+      "mcp__readback__normalize_text",
+      "mcp__readback__expand_for_speech",
+      "mcp__readback__check_homophones",
+      "mcp__readback__lookup_abbreviation"
+    ]
+  },
+  "enabledMcpjsonServers": ["readback"]
+}

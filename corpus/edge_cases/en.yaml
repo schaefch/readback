@@ -1,0 +1,87 @@
+# Curated English edge cases (see de.yaml for the meaning of `expect`).
+lang: en
+items:
+  - id: num-01
+    category: numbers
+    expect: stage1
+    text: In 1865 the first edition of 2,000 copies was withdrawn after 48 hours.
+  - id: num-02
+    category: numbers
+    expect: stage1
+    text: Take 2 × 500 mg with water, three times a day, for no more than 5 days.
+  - id: money-01
+    category: currency
+    expect: stage2
+    text: The ticket cost $3.50, or about £2.75 at the 1999 exchange rate.
+    note: '"three fifty" vs. "three dollars and fifty cents".'
+  - id: date-01
+    category: dates
+    expect: stage1
+    text: The meeting moved from the 21st of May to the 3rd of June at 10:30.
+  - id: time-01
+    category: dates
+    expect: stage2
+    text: The shop opens at 9 a.m. and closes at 6 p.m. on weekdays.
+  - id: abbr-01
+    category: abbreviations
+    expect: stage1
+    text: Mr. Dodgson and Dr. Liddell discussed the manuscript, i.e. the first draft.
+  - id: abbr-02
+    category: abbreviations
+    expect: stage2
+    text: She lives on St. James St. near St. Paul's Cathedral.
+    note: '"St." is Saint or Street depending on position.'
+  - id: roman-01
+    category: numbers
+    expect: stage2
+    text: Chapter IV describes the court of Henry VIII and Louis XIV.
+  - id: acronym-01
+    category: acronyms
+    expect: stage2
+    text: NASA and the FBI both publish data via a REST API.
+    note: NASA is read as a word, FBI letter by letter.
+  - id: homophone-01
+    category: homophones
+    expect: stage2
+    text: They're sure their luggage is over there, too far for two people to carry.
+  - id: homophone-02
+    category: homophones
+    expect: stage2
+    text: Mine is a long and a sad tale, said the Mouse, while Alice looked at its long tail.
+  - id: homograph-01
+    category: homographs
+    expect: blind
+    text: I read the record you read yesterday, then went to record a new one.
+  - id: homograph-02
+    category: homographs
+    expect: blind
+    text: The wind was too strong to wind the sail, and a tear ran down as the sail began to tear.
+  - id: homograph-03
+    category: homographs
+    expect: blind
+    text: The lead singer led the band past the old lead mine; they live close to the live venue.
+  - id: name-01
+    category: names
+    expect: stage2
+    text: Worcestershire, Leicester and Gloucester are notoriously hard to pronounce.
+  - id: name-02
+    category: names
+    expect: stage2
+    text: Hermione, Siobhan and Niamh met Saoirse in Dún Laoghaire.
+  - id: twister-01
+    category: tongue_twisters
+    expect: stage1
+    text: She sells seashells by the seashore, and the shells she sells are surely seashells.
+  - id: nonsense-01
+    category: nonsense
+    expect: stage2
+    text: Twas brillig, and the slithy toves did gyre and gimble in the wabe.
+    note: Lewis Carroll, Jabberwocky. STT will "correct" invented words.
+  - id: prosody-01
+    category: prosody
+    expect: blind
+    text: Let's eat, Grandma!
+  - id: symbol-01
+    category: symbols
+    expect: stage2
+    text: Visit www.example.org or write to help@example.org & we'll reply within 24 h.

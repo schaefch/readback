@@ -1,0 +1,29 @@
+# Local stack: API + Postgres checkpointer. Fake engines by default, so it runs
+# without API keys; set READBACK_* in .env to switch engines/reviewer.
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      READBACK_CHECKPOINTER: postgresql://readback:readback@db:5432/readback
+      READBACK_FAKE_FAULT_RATE: "0.25"
+      READBACK_FAKE_STICKY_FAULT_RATE: "0.08"
+      READBACK_FAKE_NOISE_RATE: "0.35"
+    volumes: ["audio:/data/audio"]
+    depends_on:
+      db: { condition: service_healthy }
+  db:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_USER: readback
+      POSTGRES_PASSWORD: readback
+      POSTGRES_DB: readback
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U readback"]
+      interval: 2s
+      retries: 20
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+volumes:
+  audio:
+  pgdata:

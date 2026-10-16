@@ -1,0 +1,167 @@
+# Curated German edge cases for TTS -> STT round-trip QA.
+# Each item is one chunk. `expect` documents which stage *should* settle it:
+#   stage1  - normalization makes the transcript identical (WER = 0)
+#   stage2  - a remaining difference that the rule/LLM reviewer must explain away
+#   blind   - the round trip cannot see the problem (wrong stress, prosody);
+#             only an audio-capable reviewer or a human can.
+lang: de
+items:
+  # --- numbers, units, money --------------------------------------------------
+  - id: zahl-01
+    category: numbers
+    expect: stage1
+    text: Nehmen Sie 2 × täglich 1 Tablette mit 250 ml Wasser ein.
+  - id: zahl-02
+    category: numbers
+    expect: stage1
+    text: Die Körpertemperatur stieg innerhalb von 3 Stunden auf 39,5 °C.
+  - id: zahl-03
+    category: numbers
+    expect: stage2
+    text: Im Jahr 2024 lebten rund 84,7 Mio. Menschen in Deutschland.
+    note: '"84,7 Mio." vs. "84,7 Millionen" vs. "vierundachtzig Komma sieben Millionen".'
+  - id: zahl-04
+    category: numbers
+    expect: stage2
+    text: Die Hotline erreichen Sie unter 0721 5592 0 oder per Fax unter 0721 5592 199.
+    note: Phone numbers are read in digit groups; STT formats them arbitrarily.
+  - id: geld-01
+    category: currency
+    expect: stage1
+    text: Das Duschgel kostet 1,45 €, der Grundpreis liegt bei 5,80 € pro Liter.
+  - id: geld-02
+    category: currency
+    expect: stage1
+    text: Zzgl. Pfand von 0,25 € kostet die Flasche 1,19 €.
+  - id: prozent-01
+    category: numbers
+    expect: stage1
+    text: Nur heute gibt es 15 % Rabatt auf alle Artikel, ausgenommen Säuglingsnahrung.
+
+  # --- dates and times ----------------------------------------------------------
+  - id: datum-01
+    category: dates
+    expect: stage1
+    text: Am 3. Oktober 1990 trat die Wiedervereinigung in Kraft.
+  - id: datum-02
+    category: dates
+    expect: stage2
+    text: Der Kurs findet vom 12.05. bis 14.05.2026 jeweils von 9:00 bis 16:30 Uhr statt.
+    note: Numeric dates have many spoken forms ("zwölften Mai", "zwölften Fünften").
+  - id: zeit-01
+    category: dates
+    expect: stage1
+    text: Die Filiale öffnet um 8:00 Uhr und schließt um 20:00 Uhr.
+
+  # --- abbreviations and acronyms ---------------------------------------------
+  - id: abk-01
+    category: abbreviations
+    expect: stage1
+    text: Bitte bringen Sie z. B. Ihren Ausweis mit, d. h. ein gültiges Dokument mit Lichtbild.
+  - id: abk-02
+    category: abbreviations
+    expect: stage2
+    text: Dr. Weber praktiziert in der Hauptstr. 12, gegenüber vom St. Vincentius-Krankenhaus.
+    note: '"Hauptstr." is not in the lexicon (glued abbreviation); "St." is ambiguous.'
+  - id: akronym-01
+    category: acronyms
+    expect: stage2
+    text: Die DSGVO regelt, wie eine KI-Plattform personenbezogene Daten verarbeiten darf.
+    note: TTS spells "De Es Ge Vau O"; STT may write either form.
+  - id: akronym-02
+    category: acronyms
+    expect: stage2
+    text: Die API liefert JSON, das per HTTPS an das CRM übertragen wird.
+
+  # --- homophones: STT spelling choices (must NOT be escalated) ----------------
+  - id: homophon-01
+    category: homophones
+    expect: stage2
+    text: Ich hoffe, dass das Wetter hält und ihr seid pünktlich, denn wir warten seit Stunden.
+  - id: homophon-02
+    category: homophones
+    expect: stage2
+    text: Wider besseres Wissen versuchte er es immer wieder.
+  - id: homophon-03
+    category: homophones
+    expect: stage2
+    text: Die Lerche saß in der Lärche und sang ihr Lied.
+
+  # --- homographs: same spelling, different pronunciation (round trip is blind) --
+  - id: homograph-01
+    category: homographs
+    expect: blind
+    text: Alte Äpfel modern im Keller, doch die Küche ist modern.
+  - id: homograph-02
+    category: homographs
+    expect: blind
+    text: Wir müssen die Baustelle umfahren, sonst würden wir die Absperrung umfahren.
+  - id: homograph-03
+    category: homographs
+    expect: blind
+    text: Im August besuchte August seinen Onkel, der als Tenor den Tenor der Rede kritisierte.
+
+  # --- prosody and punctuation (round trip is blind) ----------------------------
+  - id: prosodie-01
+    category: prosody
+    expect: blind
+    text: Komm, wir essen, Opa!
+    note: The comma changes the meaning; normalization removes it on both sides.
+  - id: prosodie-02
+    category: prosody
+    expect: stage2
+    text: Ach! Oh! Hm, na ja – tja.
+    note: Whisper tends to drop interjections; deletions look like TTS errors.
+
+  # --- compounds, umlauts, sharp s ------------------------------------------------
+  - id: kompositum-01
+    category: compounds
+    expect: stage2
+    text: Der Donaudampfschifffahrtsgesellschaftskapitän prüfte die Haftpflichtversicherungsbedingungen.
+  - id: kompositum-02
+    category: compounds
+    expect: stage2
+    text: Das Rindfleischetikettierungsüberwachungsaufgabenübertragungsgesetz wurde 2013 aufgehoben.
+  - id: umlaut-01
+    category: orthography
+    expect: stage1
+    text: Die Größe der Füße ändert sich über Nacht nicht.
+  - id: sz-01
+    category: orthography
+    expect: blind
+    text: Schokolade sollte man in Maßen genießen, nicht in Massen.
+    note: Normalization maps ß to ss, so a swapped vowel length would go unnoticed.
+
+  # --- foreign words and names --------------------------------------------------
+  - id: fremd-01
+    category: foreign
+    expect: stage2
+    text: Im Café in Saint-Étienne bestellte sie ein Croissant und einen Espresso macchiato.
+  - id: fremd-02
+    category: foreign
+    expect: stage2
+    text: Das Serum enthält Hyaluronsäure, Niacinamid, Panthenol und Tocopherol.
+  - id: name-01
+    category: names
+    expect: stage2
+    text: Johann Wolfgang von Goethe traf Friedrich Schiller 1794 in Jena.
+
+  # --- tongue twisters and rhythm ----------------------------------------------
+  - id: zunge-01
+    category: tongue_twisters
+    expect: stage1
+    text: Fischers Fritz fischt frische Fische, frische Fische fischt Fischers Fritz.
+  - id: zunge-02
+    category: tongue_twisters
+    expect: stage1
+    text: Blaukraut bleibt Blaukraut und Brautkleid bleibt Brautkleid.
+
+  # --- web and symbols ----------------------------------------------------------
+  - id: web-01
+    category: symbols
+    expect: stage2
+    text: Mehr Informationen finden Sie unter www.beispiel.de oder per E-Mail an hilfe@beispiel.de.
+  - id: symbol-01
+    category: symbols
+    expect: stage2
+    text: Wir lieben Pflanzen 🌱 & Tiere – vegan, ohne Mikroplastik.
