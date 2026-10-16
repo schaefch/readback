@@ -54,6 +54,10 @@ def test_rule_reviewer_flags_tts_defects(hyp, expected):
     assert judge("Er lag auf seinem panzerartig harten Rücken.", hyp).decision == expected
 
 
+def test_written_abbreviation_in_transcript_goes_to_the_next_stage():
+    assert judge("Das ist, d. h. heute, gut.", "Das ist dh heute gut.").decision == "uncertain"
+
+
 def test_similar_spelling_is_left_to_the_next_stage():
     verdict = judge("zu einem ungeheueren Ungeziefer", "zu einem ungeheuren Ungeziefer")
     assert verdict.decision == "uncertain"

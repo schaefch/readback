@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from readback import __version__
 from readback.checkpointing import open_checkpointer
-from readback.config import Settings, get_settings
+from readback.config import Settings, get_settings, load_env_file
 from readback.graph import build_graph
 from readback.graph.state import HumanDecision
 from readback.lexicon import Lang
@@ -119,6 +119,7 @@ class Runner:
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    load_env_file()
     settings = settings or get_settings()
 
     @asynccontextmanager

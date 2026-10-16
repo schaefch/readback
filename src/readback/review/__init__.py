@@ -24,10 +24,11 @@ class CascadeReviewer:
 
     async def review(self, item: ReviewInput, config: RunnableConfig | None = None) -> ReviewRecord:
         first = self.rules.judge(item)
-        if first.decision == "accept":
+        if first.decision != "uncertain":
+            # accept -> done; tts_error -> regenerate or escalate to a human. The LLM
+            # must not overrule a rule-detected defect (evals showed it explains away
+            # repetitions and word swaps as "STT artifacts").
             return first
-        if first.decision == "tts_error" and item.attempts_left > 0:
-            return first  # regenerating is cheaper than asking a model
         return await self.llm.review(item, config)
 
 

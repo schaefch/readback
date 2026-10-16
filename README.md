@@ -53,7 +53,7 @@ graph TD
 | **1 · Normalize + WER** | Reference and transcript are mapped to one spoken form (`2,95 €` ≡ `zwei Euro fünfundneunzig`, `z. B.` ≡ `zum Beispiel`, `3. Mai` ≡ `dritten Mai`). A chunk passes only at WER = 0. | free |
 | **2a · Rule reviewer** | Settles the clear cases deterministically: homophones (`das/dass`, `tale/tail`), split compounds, known Whisper hallucinations, truncation, loops, missing words. | free |
 | **2b · Regenerate** | On a TTS error the chunk is synthesized again. Deterministic engines such as Piper produce the same defect again, so retries send a *speakable* rewrite of the text instead (numbers and abbreviations written out). | TTS |
-| **2c · LLM reviewer** | Only what the rules cannot settle (`reviewer=cascade`): a LangChain `create_agent` with lexicon tools loaded **through MCP**, returning a structured `Verdict`. Optional: the audio itself is attached for audio-capable models. | tokens |
+| **2c · LLM reviewer** | Only what the rules cannot settle (`reviewer=cascade`): a LangChain `create_agent` with lexicon tools loaded **through MCP**, returning a structured `Verdict`. It can clear unclear cases but never overrule a rule-detected defect. (Attaching the audio is possible but not reliable yet; see Results.) | tokens |
 | **3 · Human** | `interrupt()` pauses the run with a review queue. The run survives restarts in the checkpointer and resumes with `Command(resume={chunk_id: {...}})`. | minutes |
 
 **Engines are pluggable** (`providers/`): Piper and faster-whisper (local, offline),
@@ -77,8 +77,15 @@ make install-local                 # piper-tts + faster-whisper + German/English
 LLM reviewer (any `init_chat_model` provider):
 
 ```bash
-export ANTHROPIC_API_KEY=...       # or AZURE_OPENAI_* with --model azure_openai:<deployment>
+echo 'ANTHROPIC_API_KEY=...' >> .env   # or OPENAI_API_KEY / AZURE_OPENAI_*
 .venv/bin/readback run corpus --reviewer cascade --model anthropic:claude-opus-5-5
+```
+
+Production-like stack with OpenAI audio (`pip install -e '.[openai]'`):
+
+```bash
+READBACK_OPENAI_TTS_VOICE=coral READBACK_OPENAI_STT_MODEL=gpt-transcribe \
+.venv/bin/readback run corpus --tts openai --stt openai --reviewer cascade --model openai:gpt-5.4-mini
 ```
 
 As a service (API + Postgres checkpointer):
@@ -120,11 +127,65 @@ repaired by regeneration alone, and 80–91 % of the audio never needs a human e
 > This evaluation is a regression harness, not a quality claim: the rule reviewer
 > knows the kinds of noise the generator produces. The real test is real audio.
 
-### Real audio (Piper → faster-whisper small, CPU)
+### Which reviewer? Rules vs. LLM vs. cascade (ground truth)
 
-This is the honest part. The full corpus was run with the small local stack:
-Piper `thorsten`/`lessac` medium voices and faster-whisper on CPU, rules only (no
-LLM key in that environment), one regeneration.
+The same offline evaluation, with the review stage swapped. LLM: `gpt-5.4-mini` at
+low reasoning effort. Three seeds each:
+
+| Reviewer | Escaped defects | False escalations | LLM calls / run | LLM cost / run | Listening saved |
+|---|---:|---:|---:|---:|---:|
+| Rules only | 0 | 1 | 0 | $0 | 80–87 % |
+| LLM only, first prompt | **28 of 34** (seed 0) | 0 | 71 | $0.15 | — |
+| LLM only, revised prompt | 2 | 2 | ~100 | $0.17 | 83–93 % |
+| **Cascade** (rules → LLM for `uncertain` only) | **0** | 1 | ~11 | **$0.02** | **84–93 %** |
+
+The interesting row is the second. With the first prompt the LLM **explained away
+real defects**: swapped words and repeated sentences became "a plausible STT
+artifact". The revised prompt names the only acceptable categories and says that
+STT engines do not reorder or repeat words. It still accepts single word
+substitutions ("were" → "her") as "probably STT". Hence the cascade policy: **the LLM
+may clear what the rules call unclear, but it can never overrule a defect the rules
+detected.** Without the labelled evaluation, none of this would have been visible.
+
+### Real audio, production-like stack (OpenAI)
+
+`gpt-4o-mini-tts` (voice `coral`) → `gpt-transcribe` → cascade with `gpt-5.4-mini`,
+one regeneration, all 146 chunks:
+
+| WER = 0 | Cleared by review | Human | Listening saved | Wall time | LLM cost |
+|---:|---:|---:|---:|---:|---:|
+| 113 (77 %) | 24 (16 %) | **9 (6 %)** | **92 %** (2.6 of 30.7 min) | 161 s | $0.03 |
+
+The nine escalations are the right ones: a name ("Bolte" → "Beulte"), Busch's
+onomatopoeia ("Kikikerikih!!", "herjemineh"), Kafka's "Haremsfrauen", a product name
+and a compound the TTS split. The LLM cleared six chunks. Five of those are clearly
+right ("vielen/fielen", "learnt/learned", "@" spoken as "at", "=" spoken as "ist").
+One is debatable ("Sankt" → "San").
+
+### Audio-listening reviewer: tested, not adopted
+
+The original pipeline used a multimodal LLM as a second opinion, so I tried attaching
+the audio (`READBACK_ATTACH_AUDIO=true`) and checked whether the model actually
+listens. The check used **controls on audio known to be correct** (WER 0 with two
+different Whisper models): (a) correct text with a corrupted transcript must give
+*accept*; (b) a corrupted text with a correct transcript must give *tts_error*.
+
+| Model | (a) accept expected | (b) tts_error expected |
+|---|---|---|
+| `gpt-audio-mini`, with transcript and diff | 0 / 10 | 10 / 10 |
+| `gpt-audio`, with transcript and diff | 0 / 10 | 10 / 10 |
+| `gpt-audio-mini`, blind (text + audio only) | 1 / 10 (invents deviations) | 10 / 10 |
+| `gpt-audio`, blind | refuses: "I can't listen to audio" | refuses |
+
+With the diff in the prompt, both models simply confirm the text difference. The
+naive spot check before that looked perfect (3 of 3 "correct" verdicts), and only
+the controls exposed it. Audio review therefore stays an opt-in extension point,
+and the default reviewer works from text only.
+
+### Real audio, local stack (Piper → faster-whisper, CPU)
+
+The cheapest possible stack: Piper `thorsten`/`lessac` medium voices and
+faster-whisper on CPU, rules only, one regeneration.
 
 | Setup (all 146 chunks) | WER = 0 | Cleared by rules | Human | Listening saved |
 |---|---:|---:|---:|---:|
@@ -153,10 +214,12 @@ WER 0) than Kafka's 400-character sentences in old spelling (1/33 with `small`,
   (*modern/modern*, *read/read*, *Komm, wir essen, Opa!*) pass at WER 0, whether or
   not the stress was right. The round trip cannot tell.
 
-The production pipeline used a cloud TTS API and a multimodal LLM as a second
-opinion. This demo's defaults are deliberately the cheapest possible stack. The
-40 chunks the rules marked `uncertain` here are exactly the ones the `cascade`
-reviewer exists for, and the next measurement to run with an API key.
+Running the cascade reviewer (`gpt-5.4-mini`) over the 98 escalations of this local
+run cleared 11 more chunks for $0.11. At least two of those clearances are wrong.
+One is "gültiges" → "giltiges": both Whisper models hear this identically, so Piper
+probably mispronounces it. From text alone, an LLM cannot tell an STT mishearing
+from a TTS mispronunciation. Comparing the two stacks, voice and STT quality matter
+far more than any reviewer.
 
 ## The test corpus
 
@@ -207,19 +270,25 @@ including the cases the method is **blind** to. See [corpus/README.md](corpus/RE
   function, so consistency matters more than linguistic correctness. Rules that
   could hide a real defect (`ß → ss`, inflected ordinals reduced to their stem)
   are documented, and the corpus contains `blind` items for them.
-- **Rules before LLM.** Most differences are boring (homophones, compounds). A
-  deterministic first pass is free and explainable, and it keeps the LLM bill
-  proportional to the genuinely ambiguous cases.
+- **Rules before LLM, and the LLM cannot overrule them.** Most differences are
+  boring (homophones, compounds). A deterministic first pass is free and
+  explainable. The LLM only sees what the rules call unclear, because the
+  evaluation showed that it rationalizes real defects away when it is allowed to
+  judge them.
+- **Fail safe.** If a review call fails (API error, invalid structured output), the
+  chunk goes to a human instead of the run crashing. One malformed verdict
+  originally aborted a whole 146-chunk run.
+- **Provider quirks live in one place.** OpenAI reasoning models only combine
+  tools with `reasoning_effort` on the Responses API. Audio models need chat
+  completions and tool-call structured output. Claude Opus 5.5 rejects forced tool
+  choice. `review/llm.py` handles all three behind one `init_chat_model` string.
 - **Retries must vary the input.** "Regenerate" helps stochastic neural TTS, but a
   deterministic engine reproduces the same defect. `regeneration_strategy=speakable`
   sends the expanded text on retries instead.
-- **Structured output without forced tool calls.** Claude Opus 5.5 rejects forced
-  `tool_choice`, so the reviewer uses `create_agent(response_format=Verdict)`, which
-  picks provider-native structured output where available.
 - **Blind spots are explicit.** Wrong stress on homographs or meaning carried by a
-  comma produce a perfect transcript. A round trip cannot see them. Attaching the
-  audio to a multimodal reviewer (`READBACK_ATTACH_AUDIO=true`) or a human pass is
-  the only fix, and the corpus marks these cases so nobody mistakes them for a pass.
+  comma produce a perfect transcript. A round trip cannot see them, and the audio
+  models tested so far could not either. The corpus marks these cases so nobody
+  mistakes them for a pass.
 - **Execution model.** Runs execute as background tasks inside the API process.
   That is enough for a demo; at scale I would move execution to a worker queue (or
   LangGraph Platform) and keep the API stateless. The checkpointer already makes

@@ -9,7 +9,17 @@ from readback.lexicon import Lang
 from readback.providers.base import AudioArtifact
 from readback.scoring import Score
 
-OpCategory = Literal["stt_artifact", "homophone", "normalization_gap", "tts_error", "unclear"]
+# Benign categories (the only reasons to accept a difference) plus the two verdicts.
+OpCategory = Literal[
+    "homophone",
+    "compound",
+    "formatting",
+    "spelling_variant",
+    "numeral_inflection",
+    "stt_hallucination",
+    "tts_error",
+    "unclear",
+]
 
 
 class OpAssessment(BaseModel):

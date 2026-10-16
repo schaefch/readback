@@ -14,7 +14,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
 
 from readback.checkpointing import open_checkpointer
-from readback.config import Settings
+from readback.config import Settings, load_env_file
 from readback.graph import build_graph
 from readback.observability import setup_logging
 from readback.report import render_markdown
@@ -153,6 +153,7 @@ def main(argv: list[str] | None = None) -> None:
     mcp = sub.add_parser("mcp", help="start the MCP server")
     mcp.add_argument("--http", action="store_true", help="streamable HTTP instead of stdio")
     args = parser.parse_args(argv)
+    load_env_file()
 
     if args.cmd == "serve":
         import uvicorn

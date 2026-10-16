@@ -30,7 +30,11 @@ def build_tts(settings: Settings) -> TTSProvider:
         case "openai":
             from readback.providers.openai_compat import OpenAITTS
 
-            return OpenAITTS(settings.openai_tts_model, settings.openai_tts_voice)
+            return OpenAITTS(
+                settings.openai_tts_model,
+                settings.openai_tts_voice,
+                settings.openai_tts_instructions,
+            )
     raise ValueError(f"unknown TTS provider {settings.tts_provider!r}")
 
 

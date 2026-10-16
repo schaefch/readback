@@ -42,7 +42,7 @@ VERDICT = {
     "issues": [
         {
             "diff": "'ungeheueren' -> 'ungeheuren'",
-            "category": "stt_artifact",
+            "category": "spelling_variant",
             "explanation": "orthography",
         }
     ],
@@ -70,7 +70,7 @@ async def test_llm_reviewer_uses_tools_and_returns_structured_verdict():
     )
     assert record.decision == "accept"
     assert record.reviewer == "llm:ScriptedModel"
-    assert record.issues[0].category == "stt_artifact"
+    assert record.issues[0].category == "spelling_variant"
 
 
 async def test_cascade_skips_the_llm_when_rules_are_sure():
@@ -83,7 +83,17 @@ async def test_cascade_skips_the_llm_when_rules_are_sure():
     cascade = CascadeReviewer(RuleReviewer(), Exploding())  # type: ignore[arg-type]
     homophone = await cascade.review(item("Ich weiß, dass es so ist.", "Ich weiß, das es so ist."))
     assert homophone.decision == "accept"
-    truncated = await cascade.review(
-        item("Er lag auf seinem Rücken.", "Er lag auf", attempts_left=1)
-    )
-    assert truncated.decision == "tts_error"  # regenerate first, no LLM call yet
+    for attempts_left in (1, 0):  # a rule-detected defect never reaches the LLM
+        truncated = await cascade.review(
+            item("Er lag auf seinem Rücken.", "Er lag auf", attempts_left=attempts_left)
+        )
+        assert truncated.decision == "tts_error"
+
+
+async def test_llm_failure_escalates_instead_of_crashing():
+    bad = dict(VERDICT, issues=[{"diff": "x", "category": "not-a-category", "explanation": "?"}])
+    call = {"name": "Verdict", "args": bad, "id": "t"}
+    model = scripted(AIMessage(content="", tool_calls=[call]))
+    record = await LLMReviewer(model, []).review(item("Er kam.", "Er kam nicht."))
+    assert record.decision == "uncertain"
+    assert "Reviewer error" in record.reasoning

@@ -26,6 +26,8 @@ from readback.normalize import normalize
         ("on the 21st of May", "on the twenty-first of may", "en"),
         ("In 1865, 15% of them", "in eighteen sixty-five fifteen percent of them", "en"),
         ("the Rabbit-Hole", "the rabbit hole", "en"),
+        ("Chapter IV and Henry VIII", "chapter four and henry eight", "en"),
+        ("I think I can", "i think i can", "en"),
     ],
 )
 def test_written_and_spoken_forms_normalize_identically(written, spoken, lang):

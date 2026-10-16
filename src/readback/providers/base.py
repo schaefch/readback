@@ -45,6 +45,10 @@ def wav_duration(path: Path) -> float | None:
 
     try:
         with wave.open(str(path), "rb") as wf:
-            return wf.getnframes() / float(wf.getframerate())
-    except (wave.Error, OSError, EOFError):
+            frame_bytes = wf.getnchannels() * wf.getsampwidth()
+            # Streamed WAVs (e.g. OpenAI TTS) carry a placeholder length in the header,
+            # so cap the frame count by what the file can actually hold.
+            frames = min(wf.getnframes(), max(0, path.stat().st_size - 44) // frame_bytes)
+            return round(frames / float(wf.getframerate()), 2)
+    except (wave.Error, OSError, EOFError, ZeroDivisionError):
         return None

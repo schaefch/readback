@@ -100,6 +100,18 @@ def _patterns(lang: Lang) -> dict[str, re.Pattern[str]]:
     }
 
 
+_ROMAN = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100}
+_ROMAN_RE = re.compile(r"\b(?=[IVXLC]{2,}\b)C{0,3}(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\b")
+
+
+def _roman(numeral: str) -> int:
+    total = 0
+    for a, b in zip(numeral, numeral[1:] + " ", strict=True):
+        value = _ROMAN[a]
+        total += -value if b != " " and _ROMAN[b] > value else value
+    return total
+
+
 def _parse_number(raw: str, lang: Lang) -> int | float:
     if lang == "de":
         raw = raw.replace(".", "").replace(",", ".")
@@ -140,6 +152,8 @@ def expand(text: str, lang: Lang) -> str:
     text = re.sub(r"(?<=\d)\s?[×x](?=\s)|\s×\s", " mal " if lang == "de" else " times ", text)
 
     text = p["abbr"].sub(lambda m: _abbreviations(lang)[m.group(1)], text)
+    if lang == "en":  # "Chapter IV", "Henry VIII"; single "I" is the pronoun
+        text = _ROMAN_RE.sub(lambda m: str(_roman(m.group(0))), text)
     text = p["cur_post"].sub(lambda m: _speak_currency(m.group(1), m.group(2), lang), text)
     text = p["cur_pre"].sub(lambda m: _speak_currency(m.group(2), m.group(1), lang), text)
 

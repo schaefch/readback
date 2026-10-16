@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     whisper_compute_type: str = "int8"
     openai_tts_model: str = "gpt-4o-mini-tts"
     openai_tts_voice: str = "alloy"
+    openai_tts_instructions: str | None = (
+        "You are an audiobook narrator. Read the text exactly as written, in its own "
+        "language, without adding, skipping or changing any words."
+    )
     openai_stt_model: str = "gpt-4o-transcribe"
 
     # Fake engines (offline demo / CI / evals)
@@ -52,6 +56,8 @@ class Settings(BaseSettings):
             "claude-opus-5-5": (4.0, 20.0),
             "claude-sonnet-5-5": (2.0, 10.0),
             "claude-haiku-5-5": (0.10, 0.50),
+            "gpt-5.4-mini": (0.75, 4.50),
+            "gpt-6-sol": (2.0, 10.0),
         }
     )
 
@@ -72,6 +78,14 @@ class Settings(BaseSettings):
     checkpointer: str = "sqlite:///var/checkpoints.sqlite"
     """``memory``, ``sqlite:///<path>`` or ``postgresql://...``."""
     log_level: str = "INFO"
+
+
+def load_env_file(path: str = ".env") -> None:
+    """Export ``.env`` into the process environment so provider SDKs (OpenAI,
+    Anthropic, LangSmith) see their keys too; existing variables win."""
+    from dotenv import load_dotenv
+
+    load_dotenv(path, override=False)
 
 
 @lru_cache

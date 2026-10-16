@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import re
 from difflib import SequenceMatcher
+from functools import cache
 
 from langchain_core.runnables import RunnableConfig
 
-from readback.lexicon import Lang, are_homophones
+from readback.lexicon import ABBREVIATIONS, Lang, are_homophones
+from readback.normalize import normalize
 from readback.review.models import OpAssessment, ReviewInput, ReviewRecord
 from readback.scoring import DiffOp, Score
 
@@ -31,6 +33,16 @@ _UK_US = [
 ]
 
 
+@cache
+def _abbreviation_forms(lang: Lang) -> dict[str, set[str]]:
+    """Normalized expansion -> written abbreviation without dots ("das heisst" -> {"dh"})."""
+    forms: dict[str, set[str]] = {}
+    for abbr in ABBREVIATIONS[lang]:
+        expansion = " ".join(normalize(ABBREVIATIONS[lang][abbr], lang))
+        forms.setdefault(expansion, set()).add(re.sub(r"[\W_]", "", abbr).lower())
+    return forms
+
+
 def _american(word: str) -> str:
     for pattern, repl in _UK_US:
         word = re.sub(pattern, repl, word)
@@ -45,7 +57,7 @@ def assess(op: DiffOp, score: Score, lang: Lang) -> tuple[OpAssessment, float]:
         return OpAssessment(diff=diff, category=category, explanation=explanation), confidence  # type: ignore[arg-type]
 
     if op.ref and op.hyp and "".join(op.ref) == "".join(op.hyp):
-        return out("stt_artifact", "Same letters, different word boundaries (compound).", 0.95)
+        return out("compound", "Same letters, different word boundaries.", 0.95)
 
     if op.kind == "substitute" and len(op.ref) == len(op.hyp):
         pairs = list(zip(op.ref, op.hyp, strict=True))
@@ -60,7 +72,7 @@ def assess(op: DiffOp, score: Score, lang: Lang) -> tuple[OpAssessment, float]:
         if op.hyp == before:
             return out("tts_error", "A phrase is repeated (TTS loop/stutter).", 0.9)
         if any(op.hyp == phrase for phrase in WHISPER_HALLUCINATIONS[lang]):
-            return out("stt_artifact", "Known Whisper hallucination phrase.", 0.85)
+            return out("stt_hallucination", "Known Whisper hallucination phrase.", 0.85)
         if set(op.hyp) <= FILLERS[lang]:
             return out("tts_error", "Filler word that is not in the text.", 0.7)
         return out("unclear", "Extra words: TTS hallucination or STT artifact.", 0.4)
@@ -72,9 +84,13 @@ def assess(op: DiffOp, score: Score, lang: Lang) -> tuple[OpAssessment, float]:
     if lang == "en" and len(op.ref) == len(op.hyp):
         pairs = list(zip(op.ref, op.hyp, strict=True))
         if all(_american(r) == _american(h) for r, h in pairs):
-            return out("stt_artifact", "British vs. American spelling.", 0.9)
+            return out("spelling_variant", "British vs. American spelling.", 0.9)
 
     ref, hyp = " ".join(op.ref), " ".join(op.hyp)
+    if "".join(op.hyp) in _abbreviation_forms(lang).get(ref, set()):
+        return out(
+            "unclear", "Transcript has the abbreviation: STT formatting, or TTS spelled it?", 0.5
+        )
     similarity = SequenceMatcher(None, ref, hyp).ratio()
     if len(op.ref) == len(op.hyp) == 1 and similarity >= 0.75:
         return out(

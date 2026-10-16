@@ -17,6 +17,8 @@ class DiffOp(BaseModel):
     hyp: list[str]
     ref_pos: int
     """Token index in the normalized reference where the op starts."""
+    hyp_pos: int = 0
+    """Token index in the normalized transcript where the op starts."""
 
     def describe(self) -> str:
         ref, hyp = " ".join(self.ref), " ".join(self.hyp)
@@ -33,6 +35,13 @@ class Score(BaseModel):
     ref_tokens: list[str]
     hyp_tokens: list[str]
     ops: list[DiffOp]
+
+    def in_context(self, op: DiffOp, window: int = 4) -> str:
+        """The op plus surrounding normalized words from both sides, so a reviewer
+        can see e.g. that an "extra" word is really a moved word."""
+        ref = self.ref_tokens[max(0, op.ref_pos - window) : op.ref_pos + len(op.ref) + window]
+        hyp = self.hyp_tokens[max(0, op.hyp_pos - window) : op.hyp_pos + len(op.hyp) + window]
+        return f"{op.describe()} | original: …{' '.join(ref)}… | transcript: …{' '.join(hyp)}…"
 
 
 def score(reference: str, transcript: str, lang: Lang) -> Score:
@@ -62,6 +71,7 @@ def score(reference: str, transcript: str, lang: Lang) -> Score:
             ref=ref[r0:r1],
             hyp=hyp[h0:h1],
             ref_pos=r0,
+            hyp_pos=h0,
         )
         for r0, r1, h0, h1 in spans
     ]

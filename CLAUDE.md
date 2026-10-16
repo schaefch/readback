@@ -25,3 +25,6 @@ WER → (rules/LLM review ↔ regenerate) → human review via `interrupt()` →
 - A normalization rule that could hide a real TTS error (e.g. ß→ss) needs a comment and a `blind` corpus item.
 - `mcp` is pinned `<2` because langchain-mcp-adapters does not support the 2.x API yet.
 - Default LLM: `anthropic:claude-opus-5-5` at `reasoning_effort=low`. Opus 5.5 rejects forced tool choice, so structured output goes through `create_agent(response_format=Verdict)`, never forced tool calls.
+- OpenAI reasoning models need the Responses API for tools + `reasoning_effort`; `gpt-audio*` models need chat completions + `ToolStrategy`. Both are handled in `review/llm.py`.
+- Cascade policy is load-bearing: the LLM only sees rule verdicts of `uncertain` and must never overrule a rule-detected `tts_error` (evals: the LLM explains real defects away). Change it only with an eval run that shows 0 escaped defects.
+- Any prompt change to the reviewer ⇒ rerun the labelled eval with `--reviewer llm` and `--reviewer cascade` on several seeds (costs cents).
